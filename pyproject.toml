@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chat-dir"
+version = "0.1.0"
+description = "List accessible ChatGPT chats from a logged-in browser session."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "ChatDir contributors" }]
+dependencies = ["playwright>=1.45"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+chat-dir = "chat_dir.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chat_dir"]
