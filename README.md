@@ -38,13 +38,19 @@ chat-dir --json
 chat-dir
 chat-dir --json
 chat-dir --urls-only
+chat-dir --csv
+chat-dir --csv --output ob-save-list.csv
+chat-dir --csv --include-undated
 chat-dir --json --output chats.json
 chat-dir --headed
 chat-dir --debug
 chat-dir login
+chat-dir --chrome login
 ```
 
 `chat-dir login` opens a visible Chromium browser. Log in to ChatGPT manually, then close the browser window. The login state is reused on later runs.
+
+If Google sign-in blocks Playwright Chromium with an unsafe browser warning, use `chat-dir --chrome login` to open the installed Google Chrome browser instead. Use `--chrome` on later collection commands too, for example `chat-dir --chrome --csv --output ob-save-list.csv`.
 
 ## Browser profile location
 
@@ -83,11 +89,22 @@ URL-only output:
 https://chatgpt.com/c/xxxxxxxx
 ```
 
+CSV output:
+
+```text
+202607101035,https://chatgpt.com/g/g-p-xxxx/c/yyyy
+202607111230,https://chatgpt.com/c/zzzz
+```
+
+CSV output has no header and is written as UTF-8. The first column is the latest valid `response_datetime` found in the chat body, converted to `YYYYMMDDHHmm` in Asia/Tokyo with seconds truncated. It is not the ChatDir execution time or the date shown in the chat list. Chats without `response_datetime` are excluded by default and logged to stderr; `--include-undated` includes them with an empty first column. Rows are sorted from oldest final response datetime to newest, then by URL for deterministic ties.
+
 ## How collection works
 
-The ChatGPT provider opens `https://chatgpt.com/`, searches DOM anchors whose `href` contains `/c/`, normalizes relative links to `https://chatgpt.com/c/{chat_id}`, removes query strings and fragments, deduplicates by URL, and preserves discovery order. Titles are read from `aria-label`, then `title`, then visible link text, with whitespace normalized.
+The ChatGPT provider opens `https://chatgpt.com/`, searches DOM anchors whose `href` contains `/c/`, normalizes relative links to `https://chatgpt.com/c/{chat_id}` or `https://chatgpt.com/g/{project_id}/c/{chat_id}`, removes query strings and fragments, deduplicates by URL, and preserves discovery order. Titles are read from `aria-label`, then `title`, then visible link text, with whitespace normalized.
 
 The provider scrolls the largest scrollable page/sidebar candidate and repeats extraction. It stops after several consecutive rounds with no new URLs, after `--max-scrolls`, or after `--timeout-ms`.
+
+`--csv` is slower than list-only modes because it opens each chat URL, scrolls to the conversation bottom, and scans assistant message text for valid `response_datetime` lines. It reports progress, skipped undated chats, load errors, and a final summary to stderr so CSV data on stdout stays clean.
 
 ## Authentication and safety
 
